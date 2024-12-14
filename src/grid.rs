@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{collections::HashSet, fmt};
 
 use crate::shape::{Color, Shape};
 
@@ -21,12 +21,11 @@ impl Grid {
     /// and all adjacent shapes of the same color.
     pub fn remove(&mut self, row: usize, col: usize) {
         self.moves.push((row, col));
-        self._remove(row, col);
+        self.remove_helper(row, col);
         self.tick();
     }
 
-    /// Internal remove
-    fn _remove(&mut self, row: usize, col: usize) {
+    fn remove_helper(&mut self, row: usize, col: usize) {
         let color = match self.shapes[row][col].color {
             Some(color) => color,
             None => return,
@@ -35,16 +34,16 @@ impl Grid {
         self.shapes[row][col].color = None;
 
         if row > 0 && self.shapes[row - 1][col].color == Some(color) {
-            self._remove(row - 1, col);
+            self.remove_helper(row - 1, col);
         }
         if row + 1 < self.shapes.len() && self.shapes[row + 1][col].color == Some(color) {
-            self._remove(row + 1, col);
+            self.remove_helper(row + 1, col);
         }
         if col > 0 && self.shapes[row][col - 1].color == Some(color) {
-            self._remove(row, col - 1);
+            self.remove_helper(row, col - 1);
         }
         if col + 1 < self.shapes[row].len() && self.shapes[row][col + 1].color == Some(color) {
-            self._remove(row, col + 1);
+            self.remove_helper(row, col + 1);
         }
     }
 
@@ -70,12 +69,32 @@ impl Grid {
             .all(|row| row.iter().all(|shape| shape.color.is_none()))
     }
 
-    /// Return the number of tiles that are empty.
+    /// Check if the grid is solved. Alias for `is_empty`.
+    pub fn is_solved(&self) -> bool {
+        self.is_empty()
+    }
+
+    /// Number of tiles that are empty.
     pub fn empty_tiles(&self) -> usize {
         self.shapes
             .iter()
             .map(|row| row.iter().filter(|shape| shape.color.is_none()).count())
             .sum()
+    }
+
+    /// A set of all valid moves on the grid.
+    pub fn valid_moves(&self) -> HashSet<(usize, usize)> {
+        let mut moves = HashSet::new();
+
+        for row in 0..self.shapes.len() {
+            for col in 0..self.shapes[0].len() {
+                if self.shapes[row][col].color.is_some() {
+                    moves.insert((row, col));
+                }
+            }
+        }
+
+        moves
     }
 }
 

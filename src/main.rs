@@ -12,8 +12,8 @@ fn main() {
     if args.len() != 3 {
         eprintln!("Usage: {} <command> <file>", args[0]);
         eprintln!("Commands:");
-        eprintln!("  solve: Solve the given grid");
-        eprintln!("  play: Play the given grid");
+        eprintln!("    solve: Solve the given grid");
+        eprintln!("    play: Play the given grid");
         std::process::exit(1);
     }
 
@@ -24,11 +24,11 @@ fn main() {
         .unwrap_or_else(|_| panic!("Could not read file {}", file_name));
 
     let parser = parser::Parser::new(input);
-    let mut grid = parser.parse().unwrap();
+    let grid = parser.parse().unwrap();
 
     match command.as_str() {
-        "solve" => solve(&mut grid),
-        "play" => play(&mut grid),
+        "solve" => solve(grid),
+        "play" => play(grid),
         _ => {
             eprintln!("Invalid command: {}", command);
             std::process::exit(1);
@@ -36,13 +36,19 @@ fn main() {
     }
 }
 
-fn solve(grid: &mut Grid) {
-    #[allow(unused_variables)]
-    let solver = Solver::new(grid.clone());
-    println!("Not implemented yet! :D");
+fn solve(grid: Grid) {
+    let solver = Solver::new(grid);
+    let moves = solver.beam_search();
+
+    println!("Moves:");
+    for (i, m) in moves.iter().enumerate() {
+        println!("{}) {:?}", i + 1, m);
+    }
 }
 
-fn play(grid: &mut Grid) {
+fn play(grid: Grid) {
+    let mut grid = grid.clone();
+
     loop {
         println!("{}", grid);
 
