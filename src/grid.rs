@@ -2,7 +2,7 @@ use std::{collections::HashSet, fmt};
 
 use crate::shape::{Color, Shape};
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Grid {
     pub shapes: Vec<Vec<Shape>>,
     pub moves: Vec<(usize, usize)>,
@@ -95,6 +95,128 @@ impl Grid {
         }
 
         moves
+    }
+
+    /// Get the largest cluster of shapes.
+    pub fn largest_cluster(&self) -> usize {
+        let mut visited = vec![vec![false; self.shapes[0].len()]; self.shapes.len()];
+        let mut max_cluster = 0;
+
+        for row in 0..self.shapes.len() {
+            for col in 0..self.shapes[0].len() {
+                if visited[row][col] {
+                    continue;
+                }
+
+                let color = match self.shapes[row][col].color {
+                    Some(color) => color,
+                    None => continue,
+                };
+
+                let mut cluster = 0;
+                self.largest_cluster_helper(row, col, color, &mut visited, &mut cluster);
+
+                max_cluster = max_cluster.max(cluster);
+            }
+        }
+
+        max_cluster
+    }
+
+    fn largest_cluster_helper(
+        &self,
+        row: usize,
+        col: usize,
+        color: Color,
+        visited: &mut Vec<Vec<bool>>,
+        cluster: &mut usize,
+    ) {
+        if row >= self.shapes.len() || col >= self.shapes[0].len() {
+            return;
+        }
+
+        if visited[row][col] {
+            return;
+        }
+
+        if self.shapes[row][col].color != Some(color) {
+            return;
+        }
+
+        visited[row][col] = true;
+        *cluster += 1;
+
+        if row > 0 {
+            self.largest_cluster_helper(row - 1, col, color, visited, cluster);
+        }
+        if row + 1 < self.shapes.len() {
+            self.largest_cluster_helper(row + 1, col, color, visited, cluster);
+        }
+        if col > 0 {
+            self.largest_cluster_helper(row, col - 1, color, visited, cluster);
+        }
+        if col + 1 < self.shapes[0].len() {
+            self.largest_cluster_helper(row, col + 1, color, visited, cluster);
+        }
+    }
+
+    /// Get the number of clusters on the grid.
+    pub fn cluster_count(&self) -> usize {
+        let mut visited = vec![vec![false; self.shapes[0].len()]; self.shapes.len()];
+        let mut count = 0;
+
+        for row in 0..self.shapes.len() {
+            for col in 0..self.shapes[0].len() {
+                if visited[row][col] {
+                    continue;
+                }
+
+                let color = match self.shapes[row][col].color {
+                    Some(color) => color,
+                    None => continue,
+                };
+
+                self.cluster_count_helper(row, col, color, &mut visited);
+                count += 1;
+            }
+        }
+
+        count
+    }
+
+    fn cluster_count_helper(
+        &self,
+        row: usize,
+        col: usize,
+        color: Color,
+        visited: &mut Vec<Vec<bool>>,
+    ) {
+        if row >= self.shapes.len() || col >= self.shapes[0].len() {
+            return;
+        }
+
+        if visited[row][col] {
+            return;
+        }
+
+        if self.shapes[row][col].color != Some(color) {
+            return;
+        }
+
+        visited[row][col] = true;
+
+        if row > 0 {
+            self.cluster_count_helper(row - 1, col, color, visited);
+        }
+        if row + 1 < self.shapes.len() {
+            self.cluster_count_helper(row + 1, col, color, visited);
+        }
+        if col > 0 {
+            self.cluster_count_helper(row, col - 1, color, visited);
+        }
+        if col + 1 < self.shapes[0].len() {
+            self.cluster_count_helper(row, col + 1, color, visited);
+        }
     }
 }
 

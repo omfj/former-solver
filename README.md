@@ -1,6 +1,33 @@
 # Former Solver
 
-Solves the game Fromer which you can play on [NRK](https://nrk.no)
+Solves the game Former which you can play on [NRK](https://www.nrk.no/spill/former-1.17105310).
+
+Example grid file:
+
+Where different letters represent different colors. The solver will output the moves needed to solve the game.
+
+```
+POOGOBG
+OBPBGBO
+GOPGBBG
+POBGOBO
+OGOBGGB
+OOOOGPO
+OPBOPGB
+GBOBPGB
+OPOGGOO
+```
+
+Example moves file:
+
+Where the first number is the row and the second number is the column.
+
+```
+3,1
+5,4
+2,1
+6,5
+```
 
 ## Credits
 

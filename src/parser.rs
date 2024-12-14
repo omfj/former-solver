@@ -1,40 +1,47 @@
 use crate::grid::Grid;
 use crate::shape::{Color, Shape};
 
-pub struct Parser {
-    pub input: String,
-}
+pub fn parse_grid(input: &str) -> Result<Grid, String> {
+    let mut grid = Grid::new(vec![]);
 
-impl Parser {
-    /// Create a new parser with the given input.
-    pub fn new(input: String) -> Parser {
-        Parser { input }
-    }
+    for (i, line) in input.lines().enumerate() {
+        let mut row = vec![];
 
-    /// Parse the input and return a grid.
-    pub fn parse(&self) -> Result<Grid, String> {
-        let mut grid = Grid::new(vec![]);
+        for (j, c) in line.chars().enumerate() {
+            let shape = match c {
+                'O' => Shape::new(Color::Orange),
+                'P' => Shape::new(Color::Pink),
+                'B' => Shape::new(Color::Blue),
+                'G' => Shape::new(Color::Green),
+                _ => return Err(format!("Invalid character at ({}, {})", i, j)),
+            };
 
-        for (i, line) in self.input.lines().enumerate() {
-            let mut row = vec![];
-
-            for (j, c) in line.chars().enumerate() {
-                let shape = match c {
-                    'O' => Shape::new(Color::Orange),
-                    'P' => Shape::new(Color::Pink),
-                    'B' => Shape::new(Color::Blue),
-                    'G' => Shape::new(Color::Green),
-                    _ => return Err(format!("Invalid character at ({}, {})", i, j)),
-                };
-
-                row.push(shape);
-            }
-
-            grid.shapes.push(row);
+            row.push(shape);
         }
 
-        Ok(grid)
+        grid.shapes.push(row);
     }
+
+    Ok(grid)
+}
+
+pub fn parse_moves(input: &str) -> Result<Vec<(usize, usize)>, String> {
+    let mut moves = vec![];
+
+    for line in input.lines() {
+        let parts = line.split(",").collect::<Vec<&str>>();
+
+        if parts.len() != 2 {
+            return Err("Invalid move format".to_string());
+        }
+
+        let row = parts[0].parse().map_err(|_| "Invalid row".to_string())?;
+        let col = parts[1].parse().map_err(|_| "Invalid col".to_string())?;
+
+        moves.push((row, col));
+    }
+
+    Ok(moves)
 }
 
 #[cfg(test)]
@@ -44,8 +51,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let input = "OPG\nOPB\nOPG".to_string();
-        let parser = Parser::new(input);
-        let grid = parser.parse().unwrap();
+        let grid = parse_grid(&input).unwrap();
 
         assert_eq!(grid.shapes[0][0].color, Some(Color::Orange));
         assert_eq!(grid.shapes[0][1].color, Some(Color::Pink));
@@ -61,10 +67,19 @@ mod tests {
     #[test]
     fn test_parse_invalid_character() {
         let input = "OPG\nOPX\nOPG".to_string();
-        let parser = Parser::new(input);
-        let result = parser.parse();
+        let result = parse_grid(&input);
 
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "Invalid character at (1, 2)");
+    }
+
+    #[test]
+    fn test_parse_moves() {
+        let input = "0,0\n1,1\n2,2".to_string();
+        let moves = parse_moves(&input).unwrap();
+
+        assert_eq!(moves[0], (0, 0));
+        assert_eq!(moves[1], (1, 1));
+        assert_eq!(moves[2], (2, 2));
     }
 }

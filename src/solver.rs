@@ -1,4 +1,5 @@
 use crate::grid::Grid;
+use std::collections::HashSet;
 
 type Row = usize;
 type Col = usize;
@@ -15,18 +16,17 @@ impl Solver {
     pub fn new(grid: Grid) -> Solver {
         Solver {
             grid,
-            beam_max_depth: 100,
-            beam_width: 100,
+            beam_max_depth: 17,
+            beam_width: 4,
         }
     }
 
     /// Solve the grid using beam search.
-    pub fn beam_search(&self) -> Vec<(Row, Col)> {
-        self.beam_search_helper(self.grid.clone(), 0)
-    }
-
-    fn beam_search_helper(&self, grid: Grid, moves: usize) -> Vec<(Row, Col)> {
+    pub fn beam_search(&self) -> Option<Vec<(Row, Col)>> {
+        let moves = 0;
+        let grid = self.grid.clone();
         let mut candidates: Vec<(Grid, Vec<(Row, Col)>)> = vec![(grid, Vec::new())];
+        let mut seen_grids: HashSet<Grid> = HashSet::new();
 
         for depth in 0..self.beam_max_depth {
             let mut next_candidates: Vec<(Grid, Vec<(Row, Col)>, Score)> = Vec::new();
@@ -36,20 +36,26 @@ impl Solver {
                     let mut new_grid = grid.clone();
                     new_grid.remove(row, col);
 
+                    if seen_grids.contains(&new_grid) {
+                        continue;
+                    }
+
+                    seen_grids.insert(new_grid.clone());
+
                     let mut new_path = path.clone();
                     new_path.push((row, col));
 
                     if new_grid.is_solved() {
-                        return new_path;
+                        return Some(new_path);
                     }
 
-                    let score = score(&new_grid, moves + 1);
+                    let score = lookahead_score(&new_grid, 3, moves + 1);
                     next_candidates.push((new_grid, new_path, score));
                 }
             }
 
-            // Sort by score (highest scores first)
             next_candidates.sort_by_key(|&(_, _, score)| -(score as isize));
+
             next_candidates.truncate(self.beam_width);
 
             candidates = next_candidates
@@ -63,17 +69,37 @@ impl Solver {
             }
         }
 
-        if let Some((_, best_path)) = candidates.first() {
-            best_path.clone()
-        } else {
-            Vec::new()
+        for (grid, path) in candidates {
+            if grid.is_solved() {
+                return Some(path);
+            }
         }
+
+        None
     }
 }
 
 fn score(grid: &Grid, moves: usize) -> Score {
-    if moves == 0 {
-        return 0;
+    let empty_count = grid.empty_tiles();
+    let largest_cluster_size = grid.largest_cluster();
+
+    (empty_count + largest_cluster_size) * 10 / (moves + 1)
+}
+
+fn lookahead_score(grid: &Grid, depth: usize, current_moves: usize) -> Score {
+    if depth == 0 {
+        return score(grid, current_moves);
     }
-    grid.empty_tiles() / moves
+
+    let mut best_score = 0;
+    for (row, col) in grid.valid_moves() {
+        let mut new_grid = grid.clone();
+        new_grid.remove(row, col);
+        let potential_score = lookahead_score(&new_grid, depth - 1, current_moves + 1);
+        if potential_score > best_score {
+            best_score = potential_score;
+        }
+    }
+
+    best_score
 }
