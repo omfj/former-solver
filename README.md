@@ -31,4 +31,4 @@ Where the first number is the row and the second number is the column.
 
 ## Credits
 
-Heavily inspired by the writeup by [Tommy Odland](https://tommyodland.com/articles/2024/solving-nrks-game-former/). Thank you so much for such a insightful explanation.
+Heavily inspired by the writeup by [Tommy Odland](https://tommyodland.com/articles/2024/solving-nrks-game-former/). Thank you so much for such an insightful explanation.
