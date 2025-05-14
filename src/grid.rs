@@ -1,18 +1,20 @@
 use std::{collections::HashSet, fmt};
 
-use crate::shape::{Color, Shape};
+use crate::color::Color;
+
+const DIRS: [(isize, isize); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Grid {
-    pub shapes: Vec<Vec<Shape>>,
+    pub colors: Vec<Vec<Option<Color>>>,
     pub moves: Vec<(usize, usize)>,
 }
 
 impl Grid {
     /// Create a new grid with the given colors.
-    pub fn new(shapes: Vec<Vec<Shape>>) -> Grid {
+    pub fn new(colors: Vec<Vec<Option<Color>>>) -> Grid {
         Grid {
-            shapes,
+            colors,
             moves: Vec::new(),
         }
     }
@@ -26,37 +28,32 @@ impl Grid {
     }
 
     fn remove_helper(&mut self, row: usize, col: usize) {
-        let color = match self.shapes[row][col].color {
-            Some(color) => color,
-            None => return,
-        };
+        if let Some(color) = self.colors[row][col] {
+            self.colors[row][col] = None;
 
-        self.shapes[row][col].color = None;
+            for &(dx, dy) in &DIRS {
+                let nx = (row as isize + dx) as usize;
+                let ny = (col as isize + dy) as usize;
 
-        if row > 0 && self.shapes[row - 1][col].color == Some(color) {
-            self.remove_helper(row - 1, col);
-        }
-        if row + 1 < self.shapes.len() && self.shapes[row + 1][col].color == Some(color) {
-            self.remove_helper(row + 1, col);
-        }
-        if col > 0 && self.shapes[row][col - 1].color == Some(color) {
-            self.remove_helper(row, col - 1);
-        }
-        if col + 1 < self.shapes[row].len() && self.shapes[row][col + 1].color == Some(color) {
-            self.remove_helper(row, col + 1);
+                if nx < self.colors.len() && ny < self.colors[0].len() {
+                    if self.colors[nx][ny] == Some(color) {
+                        self.remove_helper(nx, ny);
+                    }
+                }
+            }
         }
     }
 
     /// Shift all the shapes that are above an empty space down.
     fn tick(&mut self) {
-        for col in 0..self.shapes[0].len() {
+        for col in 0..self.colors[0].len() {
             let mut empty = 0;
-            for row in (0..self.shapes.len()).rev() {
-                if self.shapes[row][col].color.is_none() {
+            for row in (0..self.colors.len()).rev() {
+                if self.colors[row][col].is_none() {
                     empty += 1;
                 } else if empty > 0 {
-                    self.shapes[row + empty][col] = self.shapes[row][col];
-                    self.shapes[row][col].color = None;
+                    self.colors[row + empty][col] = self.colors[row][col];
+                    self.colors[row][col] = None;
                 }
             }
         }
@@ -64,9 +61,9 @@ impl Grid {
 
     /// Check if the grid is empty/solved.
     pub fn is_empty(&self) -> bool {
-        self.shapes
+        self.colors
             .iter()
-            .all(|row| row.iter().all(|shape| shape.color.is_none()))
+            .all(|row| row.iter().all(|color| color.is_none()))
     }
 
     /// Check if the grid is solved. Alias for `is_empty`.
@@ -76,9 +73,9 @@ impl Grid {
 
     /// Number of tiles that are empty.
     pub fn empty_tiles(&self) -> usize {
-        self.shapes
+        self.colors
             .iter()
-            .map(|row| row.iter().filter(|shape| shape.color.is_none()).count())
+            .map(|row| row.iter().filter(|color| color.is_none()).count())
             .sum()
     }
 
@@ -86,9 +83,9 @@ impl Grid {
     pub fn valid_moves(&self) -> HashSet<(usize, usize)> {
         let mut moves = HashSet::new();
 
-        for row in 0..self.shapes.len() {
-            for col in 0..self.shapes[0].len() {
-                if self.shapes[row][col].color.is_some() {
+        for row in 0..self.colors.len() {
+            for col in 0..self.colors[0].len() {
+                if self.colors[row][col].is_some() {
                     moves.insert((row, col));
                 }
             }
@@ -99,16 +96,16 @@ impl Grid {
 
     /// Get the largest cluster of shapes.
     pub fn largest_cluster(&self) -> usize {
-        let mut visited = vec![vec![false; self.shapes[0].len()]; self.shapes.len()];
+        let mut visited = vec![vec![false; self.colors[0].len()]; self.colors.len()];
         let mut max_cluster = 0;
 
-        for row in 0..self.shapes.len() {
-            for col in 0..self.shapes[0].len() {
+        for row in 0..self.colors.len() {
+            for col in 0..self.colors[0].len() {
                 if visited[row][col] {
                     continue;
                 }
 
-                let color = match self.shapes[row][col].color {
+                let color = match self.colors[row][col] {
                     Some(color) => color,
                     None => continue,
                 };
@@ -131,7 +128,7 @@ impl Grid {
         visited: &mut Vec<Vec<bool>>,
         cluster: &mut usize,
     ) {
-        if row >= self.shapes.len() || col >= self.shapes[0].len() {
+        if row >= self.colors.len() || col >= self.colors[0].len() {
             return;
         }
 
@@ -139,7 +136,7 @@ impl Grid {
             return;
         }
 
-        if self.shapes[row][col].color != Some(color) {
+        if self.colors[row][col] != Some(color) {
             return;
         }
 
@@ -149,29 +146,29 @@ impl Grid {
         if row > 0 {
             self.largest_cluster_helper(row - 1, col, color, visited, cluster);
         }
-        if row + 1 < self.shapes.len() {
+        if row + 1 < self.colors.len() {
             self.largest_cluster_helper(row + 1, col, color, visited, cluster);
         }
         if col > 0 {
             self.largest_cluster_helper(row, col - 1, color, visited, cluster);
         }
-        if col + 1 < self.shapes[0].len() {
+        if col + 1 < self.colors[0].len() {
             self.largest_cluster_helper(row, col + 1, color, visited, cluster);
         }
     }
 
     /// Get the number of clusters on the grid.
     pub fn cluster_count(&self) -> usize {
-        let mut visited = vec![vec![false; self.shapes[0].len()]; self.shapes.len()];
+        let mut visited = vec![vec![false; self.colors[0].len()]; self.colors.len()];
         let mut count = 0;
 
-        for row in 0..self.shapes.len() {
-            for col in 0..self.shapes[0].len() {
+        for row in 0..self.colors.len() {
+            for col in 0..self.colors[0].len() {
                 if visited[row][col] {
                     continue;
                 }
 
-                let color = match self.shapes[row][col].color {
+                let color = match self.colors[row][col] {
                     Some(color) => color,
                     None => continue,
                 };
@@ -191,7 +188,7 @@ impl Grid {
         color: Color,
         visited: &mut Vec<Vec<bool>>,
     ) {
-        if row >= self.shapes.len() || col >= self.shapes[0].len() {
+        if row >= self.colors.len() || col >= self.colors[0].len() {
             return;
         }
 
@@ -199,7 +196,7 @@ impl Grid {
             return;
         }
 
-        if self.shapes[row][col].color != Some(color) {
+        if self.colors[row][col] != Some(color) {
             return;
         }
 
@@ -208,13 +205,13 @@ impl Grid {
         if row > 0 {
             self.cluster_count_helper(row - 1, col, color, visited);
         }
-        if row + 1 < self.shapes.len() {
+        if row + 1 < self.colors.len() {
             self.cluster_count_helper(row + 1, col, color, visited);
         }
         if col > 0 {
             self.cluster_count_helper(row, col - 1, color, visited);
         }
-        if col + 1 < self.shapes[0].len() {
+        if col + 1 < self.colors[0].len() {
             self.cluster_count_helper(row, col + 1, color, visited);
         }
     }
@@ -223,11 +220,11 @@ impl Grid {
 impl fmt::Display for Grid {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut result = String::new();
-        result.push_str(&format!("+{}+\n", "-".repeat(self.shapes[0].len())));
-        for row in &self.shapes {
+        result.push_str(&format!("+{}+\n", "-".repeat(self.colors[0].len())));
+        for row in &self.colors {
             result.push('|');
             for shape in row {
-                let color = match shape.color {
+                let color = match shape {
                     Some(Color::Orange) => "O",
                     Some(Color::Pink) => "P",
                     Some(Color::Blue) => "B",
@@ -238,7 +235,7 @@ impl fmt::Display for Grid {
             }
             result.push_str("|\n");
         }
-        result.push_str(&format!("+{}+\n", "-".repeat(self.shapes[0].len())));
+        result.push_str(&format!("+{}+\n", "-".repeat(self.colors[0].len())));
 
         write!(f, "{}", result)
     }
@@ -251,40 +248,36 @@ mod tests {
     #[test]
     fn test_remove() {
         let shapes = vec![vec![
-            Shape::new(Color::Orange),
-            Shape::new(Color::Orange),
-            Shape::new(Color::Orange),
+            Some(Color::Orange),
+            Some(Color::Orange),
+            Some(Color::Orange),
         ]];
 
         let mut grid = Grid::new(shapes);
         grid.remove(0, 0);
 
-        let expected = vec![vec![
-            Shape { color: None },
-            Shape { color: None },
-            Shape { color: None },
-        ]];
+        let expected = vec![vec![None, None, None]];
 
-        assert_eq!(grid.shapes, expected);
+        assert_eq!(grid.colors, expected);
     }
 
     #[test]
     fn test_gravity() {
         let shapes = vec![
-            vec![Shape::new(Color::Orange)],
-            vec![Shape::new(Color::Orange)],
-            vec![Shape::new(Color::Blue)],
+            vec![Some(Color::Orange)],
+            vec![Some(Color::Orange)],
+            vec![Some(Color::Blue)],
         ];
 
         let mut grid = Grid::new(shapes);
         grid.remove(2, 0);
 
         let expected = vec![
-            vec![Shape { color: None }],
-            vec![Shape::new(Color::Orange)],
-            vec![Shape::new(Color::Orange)],
+            vec![None],
+            vec![Some(Color::Orange)],
+            vec![Some(Color::Orange)],
         ];
 
-        assert_eq!(grid.shapes, expected);
+        assert_eq!(grid.colors, expected);
     }
 }

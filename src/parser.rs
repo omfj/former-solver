@@ -1,5 +1,5 @@
+use crate::color::Color;
 use crate::grid::Grid;
-use crate::shape::{Color, Shape};
 
 pub fn parse_grid(input: &str) -> Result<Grid, String> {
     let mut grid = Grid::new(vec![]);
@@ -8,18 +8,14 @@ pub fn parse_grid(input: &str) -> Result<Grid, String> {
         let mut row = vec![];
 
         for (j, c) in line.chars().enumerate() {
-            let shape = match c {
-                'O' => Shape::new(Color::Orange),
-                'P' => Shape::new(Color::Pink),
-                'B' => Shape::new(Color::Blue),
-                'G' => Shape::new(Color::Green),
-                _ => return Err(format!("Invalid character at ({}, {})", i, j)),
-            };
-
-            row.push(shape);
+            let color = Color::try_from(c);
+            match color {
+                Ok(color) => row.push(Some(color)),
+                Err(_) => return Err(format!("Invalid character at ({}, {})", i, j)),
+            }
         }
 
-        grid.shapes.push(row);
+        grid.colors.push(row);
     }
 
     Ok(grid)
@@ -53,15 +49,15 @@ mod tests {
         let input = "OPG\nOPB\nOPG".to_string();
         let grid = parse_grid(&input).unwrap();
 
-        assert_eq!(grid.shapes[0][0].color, Some(Color::Orange));
-        assert_eq!(grid.shapes[0][1].color, Some(Color::Pink));
-        assert_eq!(grid.shapes[0][2].color, Some(Color::Green));
-        assert_eq!(grid.shapes[1][0].color, Some(Color::Orange));
-        assert_eq!(grid.shapes[1][1].color, Some(Color::Pink));
-        assert_eq!(grid.shapes[1][2].color, Some(Color::Blue));
-        assert_eq!(grid.shapes[2][0].color, Some(Color::Orange));
-        assert_eq!(grid.shapes[2][1].color, Some(Color::Pink));
-        assert_eq!(grid.shapes[2][2].color, Some(Color::Green));
+        assert_eq!(grid.colors[0][0], Some(Color::Orange));
+        assert_eq!(grid.colors[0][1], Some(Color::Pink));
+        assert_eq!(grid.colors[0][2], Some(Color::Green));
+        assert_eq!(grid.colors[1][0], Some(Color::Orange));
+        assert_eq!(grid.colors[1][1], Some(Color::Pink));
+        assert_eq!(grid.colors[1][2], Some(Color::Blue));
+        assert_eq!(grid.colors[2][0], Some(Color::Orange));
+        assert_eq!(grid.colors[2][1], Some(Color::Pink));
+        assert_eq!(grid.colors[2][2], Some(Color::Green));
     }
 
     #[test]

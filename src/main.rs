@@ -2,9 +2,9 @@ use crate::grid::Grid;
 use crate::solver::Solver;
 use clap::{Parser, Subcommand};
 
+pub mod color;
 pub mod grid;
 pub mod parser;
-pub mod shape;
 pub mod solver;
 
 #[derive(Parser)]
