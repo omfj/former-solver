@@ -11,7 +11,7 @@ pub mod solver;
 #[command(version, about, long_about = None)]
 struct Cli {
     #[command(subcommand)]
-    command: Option<Commands>,
+    command: Commands,
 }
 
 #[derive(Subcommand)]
@@ -38,18 +38,18 @@ fn main() {
     let cli = Cli::parse();
 
     match &cli.command {
-        Some(Commands::Solve { grid_file }) => {
+        Commands::Solve { grid_file } => {
             let input = std::fs::read_to_string(grid_file)
                 .unwrap_or_else(|_| panic!("Could not read file {}", grid_file));
 
-            let grid = parser::parse_grid(&input).unwrap();
+            let grid = Grid::try_from(input.as_str()).unwrap();
 
             solve(grid)
         }
-        Some(Commands::Play {
+        Commands::Play {
             grid_file,
             moves_file,
-        }) => {
+        } => {
             let mut moves = vec![];
 
             let grid_input = std::fs::read_to_string(grid_file)
@@ -63,13 +63,9 @@ fn main() {
                 moves = parser::parse_moves(&moves_input).unwrap();
             }
 
-            let grid = parser::parse_grid(&grid_input).unwrap();
+            let grid = Grid::try_from(grid_input.as_str()).unwrap();
 
             play(grid, moves);
-        }
-        None => {
-            eprintln!("No command provided");
-            std::process::exit(1);
         }
     }
 }

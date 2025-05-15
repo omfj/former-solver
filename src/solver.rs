@@ -28,6 +28,11 @@ impl Solver {
         let mut candidates: Vec<(Grid, Vec<(Row, Col)>)> = vec![(grid, Vec::new())];
         let mut seen_grids: HashSet<Grid> = HashSet::new();
 
+        println!(
+            "Starting beam search with max depth {} and width {}.",
+            self.beam_max_depth, self.beam_width
+        );
+
         for depth in 0..self.beam_max_depth {
             let mut next_candidates: Vec<(Grid, Vec<(Row, Col)>, Score)> = Vec::new();
 

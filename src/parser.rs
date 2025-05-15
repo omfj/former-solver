@@ -1,24 +1,35 @@
 use crate::color::Color;
 use crate::grid::Grid;
 
-pub fn parse_grid(input: &str) -> Result<Grid, String> {
-    let mut grid = Grid::new(vec![]);
+impl TryFrom<&str> for Grid {
+    type Error = String;
 
-    for (i, line) in input.lines().enumerate() {
-        let mut row = vec![];
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let mut colors = vec![];
 
-        for (j, c) in line.chars().enumerate() {
-            let color = Color::try_from(c);
-            match color {
-                Ok(color) => row.push(Some(color)),
-                Err(_) => return Err(format!("Invalid character at ({}, {})", i, j)),
+        for line in value.lines() {
+            let mut row = vec![];
+
+            for c in line.chars() {
+                let color = Color::try_from(c);
+                match color {
+                    Ok(color) => row.push(Some(color)),
+                    Err(_) => {
+                        return Err(format!(
+                            "Invalid character at ({}, {}): {}",
+                            colors.len(),
+                            row.len(),
+                            c
+                        ))
+                    }
+                }
             }
+
+            colors.push(row);
         }
 
-        grid.colors.push(row);
+        Ok(Grid::new(colors))
     }
-
-    Ok(grid)
 }
 
 pub fn parse_moves(input: &str) -> Result<Vec<(usize, usize)>, String> {
@@ -46,8 +57,8 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let input = "OPG\nOPB\nOPG".to_string();
-        let grid = parse_grid(&input).unwrap();
+        let input = "OPG\nOPB\nOPG";
+        let grid = Grid::try_from(input).unwrap();
 
         assert_eq!(grid.colors[0][0], Some(Color::Orange));
         assert_eq!(grid.colors[0][1], Some(Color::Pink));
@@ -62,11 +73,11 @@ mod tests {
 
     #[test]
     fn test_parse_invalid_character() {
-        let input = "OPG\nOPX\nOPG".to_string();
-        let result = parse_grid(&input);
+        let input = "OPG\nOPX\nOPG";
+        let result = Grid::try_from(input);
 
         assert!(result.is_err());
-        assert_eq!(result.unwrap_err(), "Invalid character at (1, 2)");
+        assert_eq!(result.unwrap_err(), "Invalid character at (1, 2): X");
     }
 
     #[test]

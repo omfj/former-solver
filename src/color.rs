@@ -6,6 +6,17 @@ pub enum Color {
     Orange,
 }
 
+impl Color {
+    pub fn to_char(self) -> char {
+        match self {
+            Color::Green => 'G',
+            Color::Pink => 'P',
+            Color::Blue => 'B',
+            Color::Orange => 'O',
+        }
+    }
+}
+
 impl TryFrom<char> for Color {
     type Error = String;
 

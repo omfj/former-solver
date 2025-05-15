@@ -223,15 +223,13 @@ impl fmt::Display for Grid {
         result.push_str(&format!("+{}+\n", "-".repeat(self.colors[0].len())));
         for row in &self.colors {
             result.push('|');
-            for shape in row {
-                let color = match shape {
-                    Some(Color::Orange) => "O",
-                    Some(Color::Pink) => "P",
-                    Some(Color::Blue) => "B",
-                    Some(Color::Green) => "G",
-                    None => " ",
+            for color in row {
+                let color = match color {
+                    Some(color) => color.to_char(),
+                    None => ' ',
                 };
-                result.push_str(color);
+
+                result.push(color);
             }
             result.push_str("|\n");
         }
